@@ -19,5 +19,10 @@ export async function docxToPdf(bytes, report = () => {}) {
     const result = await converter.convert(bytes, { inputFormat: 'docx', outputFormat: 'pdf' }, 'input.docx');
     if (!result.data?.length) throw Error('LibreOffice 未生成 PDF');
     return new Uint8Array(result.data);
-  } finally { await converter.destroy(); }
+  } finally {
+    // Version 2.7.2's destroy message accesses an unexported Emscripten
+    // runtime property and never replies. Terminating its dedicated worker
+    // also releases the WASM instance and avoids leaving the UI waiting.
+    converter.worker?.terminate();
+  }
 }
